@@ -1,0 +1,42 @@
+# Setup job: idempotent scaffolding not managed by the bundle (data, online store and tag policies) and ingestion pipeline
+resources:
+  jobs:
+    fraud_setup:
+      name: ${var.prefix}_fraud_setup
+      parameters:
+        - name: landing
+          default: /Volumes/${var.catalog}/${var.schema}/${resources.volumes.landing.name}
+        - name: online_store
+          default: ${var.online_store}
+        # Run identities of the targets: developer (dev deploy) and SP of staging/prod
+        - name: principals
+          default: ${workspace.current_user.userName},${var.service_principal}
+      environments:
+        - environment_key: setup
+          spec:
+            client: "3"
+            dependencies:
+              - databricks-feature-engineering>=0.16.0
+              - databricks-sdk>=0.101.0
+      tasks:
+        - task_key: data
+          notebook_task:
+            notebook_path: ../setup/notebooks/data.py
+          environment_key: setup
+        # Landing files → bronze/silver tables (triggered pipeline update)
+        - task_key: ingest
+          depends_on:
+            - task_key: data
+          pipeline_task:
+            pipeline_id: ${resources.pipelines.fraud_ingest.id}
+        - task_key: online_store
+          notebook_task:
+            notebook_path: ../setup/notebooks/online_store.py
+          environment_key: setup
+        - task_key: tag_policy
+          notebook_task:
+            notebook_path: ../setup/notebooks/tag_policy.py
+          environment_key: setup
+      permissions:
+        - group_name: ${var.viewers_group}
+          level: CAN_MANAGE_RUN

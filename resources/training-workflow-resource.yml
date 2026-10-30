@@ -1,0 +1,85 @@
+# Training/retraining job: features → training → quality gate → registration and `champion` alias
+resources:
+  jobs:
+    fraud_training:
+      name: ${var.prefix}_fraud_training
+      timeout_seconds: 7200
+      parameters:
+        - name: min_auc
+          default: "0.5"
+        - name: team
+          default: fraud
+        - name: retention
+          default: 365d
+        - name: catalog
+          default: ${var.catalog}
+        - name: schema
+          default: ${var.schema}
+        - name: online_store
+          default: ${var.online_store}
+        - name: experiment
+          default: ${resources.experiments.fraud_experiment.name}
+        - name: model_name
+          default: ${var.catalog}.${var.schema}.${resources.registered_models.fraud_model.name}
+      environments:
+        - environment_key: fe
+          spec:
+            client: "3"
+            dependencies:
+              - databricks-feature-engineering>=0.16.0
+        - environment_key: train
+          spec:
+            client: "3"
+            dependencies:
+              - databricks-feature-engineering>=0.16.0
+              - hyperopt
+              - xgboost
+      tasks:
+        - task_key: feature_batch
+          notebook_task:
+            notebook_path: ../training/notebooks/feature_batch.py
+          environment_key: fe
+          max_retries: 2
+          min_retry_interval_millis: 60000
+          retry_on_timeout: true
+          timeout_seconds: 3600
+        - task_key: feature_ondemand
+          notebook_task:
+            notebook_path: ../training/notebooks/feature_ondemand.py
+          environment_key: fe
+          max_retries: 2
+          min_retry_interval_millis: 60000
+          retry_on_timeout: true
+          timeout_seconds: 900
+        - task_key: train
+          depends_on:
+            - task_key: feature_batch
+            - task_key: feature_ondemand
+          notebook_task:
+            notebook_path: ../training/notebooks/train.py
+          environment_key: train
+          max_retries: 2
+          min_retry_interval_millis: 60000
+          retry_on_timeout: true
+          timeout_seconds: 3600
+        - task_key: quality_gate
+          depends_on:
+            - task_key: train
+          condition_task:
+            op: GREATER_THAN_OR_EQUAL
+            left: "{{tasks.train.values.test_auc}}"
+            right: "{{job.parameters.min_auc}}"
+        - task_key: register
+          depends_on:
+            - task_key: quality_gate
+              outcome: "true"
+          notebook_task:
+            notebook_path: ../training/notebooks/register.py
+          environment_key: fe
+          max_retries: 2
+          min_retry_interval_millis: 60000
+          retry_on_timeout: true
+          timeout_seconds: 900
+      permissions:
+        - group_name: ${var.viewers_group}
+          level: CAN_MANAGE_RUN

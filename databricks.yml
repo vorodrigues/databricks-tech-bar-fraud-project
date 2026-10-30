@@ -1,0 +1,62 @@
+# MLOps bundle of the PIX fraud model (MLOps Stacks layout)
+bundle:
+  name: databricks_tech_bar_fraud_project
+
+include:
+  - resources/*.yml
+
+# One-off test code stays out of the deploy
+sync:
+  exclude:
+    - .DRAFTS
+
+variables:
+  catalog:
+    description: Unity Catalog catalog
+    default: vr_workspace
+  schema:
+    description: Unity Catalog schema of the target (pre-existing)
+  prefix:
+    description: Prefix of assets without a directory (jobs, endpoint)
+    default: ${bundle.target}
+  online_store:
+    description: Lakebase project of the online feature store (shared across targets)
+    default: feature-store-online
+  service_principal:
+    description: Application ID of the CI/CD service principal (run_as of staging/prod)
+    default: 6036593a-f1b6-49ee-aa6d-145161164de9
+  viewers_group:
+    description: Group with run/view permission
+    default: ml-viewers
+
+workspace:
+  host: https://dbc-963f3995-3da2.cloud.databricks.com
+
+targets:
+  dev:
+    mode: development
+    default: true
+    workspace:
+      root_path: /Workspace/Users/victor.rodrigues@databricks.com/tech_bar/databricks-tech-bar-fraud-project/dev
+    run_as:
+      user_name: victor.rodrigues@databricks.com
+    variables:
+      schema: tech_bar_dev
+
+  staging:
+    mode: production
+    workspace:
+      root_path: /Workspace/Users/victor.rodrigues@databricks.com/tech_bar/databricks-tech-bar-fraud-project/staging
+    run_as:
+      service_principal_name: ${var.service_principal}
+    variables:
+      schema: tech_bar_staging
+
+  prod:
+    mode: production
+    workspace:
+      root_path: /Workspace/Users/victor.rodrigues@databricks.com/tech_bar/databricks-tech-bar-fraud-project/prod
+    run_as:
+      service_principal_name: ${var.service_principal}
+    variables:
+      schema: tech_bar
