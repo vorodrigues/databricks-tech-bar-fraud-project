@@ -1,0 +1,30 @@
+# Online serving deploy job: publishes `fraud_model@champion` to a route-optimized endpoint
+resources:
+  jobs:
+    fraud_online_deploy:
+      name: ${var.prefix}_fraud_online_deploy
+      parameters:
+        - name: endpoint_name
+          default: ${var.prefix}_fraud_serving
+        - name: model_name
+          default: ${var.catalog}.${var.schema}.${resources.registered_models.fraud_model.name}
+        - name: catalog
+          default: ${var.catalog}
+        - name: schema
+          default: ${var.schema}
+        - name: viewers_group
+          default: ${var.viewers_group}
+      environments:
+        - environment_key: serving
+          spec:
+            client: "3"
+            dependencies:
+              - databricks-sdk>=0.60.0
+      tasks:
+        - task_key: deploy
+          notebook_task:
+            notebook_path: ../serving/notebooks/online_deploy.py
+          environment_key: serving
+      permissions:
+        - group_name: ${var.viewers_group}
+          level: CAN_MANAGE_RUN

@@ -1,0 +1,22 @@
+# Landing volume and ingestion pipeline (Lakeflow SDP): JSON files → bronze → silver tables of the target schema
+resources:
+  volumes:
+    landing:
+      catalog_name: ${var.catalog}
+      schema_name: ${var.schema}
+      name: landing
+      volume_type: MANAGED
+      comment: Landing files (JSON) of the PIX fraud model sources
+
+  pipelines:
+    fraud_ingest:
+      name: ${var.prefix}_fraud_ingest
+      serverless: true
+      continuous: false  # triggered: each update processes the new files and stops
+      catalog: ${var.catalog}
+      schema: ${var.schema}
+      libraries:
+        - file:
+            path: ../setup/pipelines/ingest.py
+      configuration:
+        landing: /Volumes/${var.catalog}/${var.schema}/${resources.volumes.landing.name}

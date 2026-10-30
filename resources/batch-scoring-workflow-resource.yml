@@ -1,0 +1,38 @@
+# Batch scoring job: scores the source table with `fraud_model@champion` (daily, paused by default)
+resources:
+  jobs:
+    fraud_batch_scoring:
+      name: ${var.prefix}_fraud_batch_scoring
+      timeout_seconds: 1800
+      schedule:
+        quartz_cron_expression: "0 0 6 * * ?"
+        timezone_id: America/Sao_Paulo
+        pause_status: PAUSED
+      parameters:
+        - name: source_table
+          default: ${var.catalog}.${var.schema}.raw_fraud_labels
+        - name: catalog
+          default: ${var.catalog}
+        - name: schema
+          default: ${var.schema}
+        - name: model_name
+          default: ${var.catalog}.${var.schema}.${resources.registered_models.fraud_model.name}
+      environments:
+        - environment_key: fe
+          spec:
+            client: "3"
+            dependencies:
+              - databricks-feature-engineering>=0.16.0
+              - xgboost
+      tasks:
+        - task_key: score
+          notebook_task:
+            notebook_path: ../scoring/notebooks/batch_scoring.py
+          environment_key: fe
+          max_retries: 2
+          min_retry_interval_millis: 60000
+          retry_on_timeout: true
+          timeout_seconds: 1800
+      permissions:
+        - group_name: ${var.viewers_group}
+          level: CAN_MANAGE_RUN
