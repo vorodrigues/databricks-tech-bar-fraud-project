@@ -37,7 +37,7 @@ targets:
     mode: development
     default: true
     workspace:
-      root_path: /Workspace/Users/victor.rodrigues@databricks.com/databricks-tech-bar-fraud-project/dev
+      root_path: /Workspace/Users/victor.rodrigues@databricks.com/tech_bar/databricks-tech-bar-fraud-project/dev
     run_as:
       user_name: victor.rodrigues@databricks.com
     variables:
@@ -46,7 +46,7 @@ targets:
   staging:
     mode: production
     workspace:
-      root_path: /Workspace/databricks-tech-bar-fraud-project/staging
+      root_path: /Workspace/Users/victor.rodrigues@databricks.com/tech_bar/databricks-tech-bar-fraud-project/staging
     run_as:
       service_principal_name: ${var.service_principal}
     variables:
@@ -55,7 +55,7 @@ targets:
   prod:
     mode: production
     workspace:
-      root_path: /Workspace/databricks-tech-bar-fraud-project/prod
+      root_path: /Workspace/Users/victor.rodrigues@databricks.com/tech_bar/databricks-tech-bar-fraud-project/prod
     run_as:
       service_principal_name: ${var.service_principal}
     variables:
