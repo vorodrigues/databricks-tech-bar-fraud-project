@@ -24,7 +24,7 @@ variables:
     default: feature-store-online
   service_principal:
     description: Application ID of the CI/CD service principal (run_as of staging/prod)
-    default: 6036593a-f1b6-49ee-aa6d-145161164de9
+    default: 2c7f8b7d-4798-4077-88a7-e98e460f49a4
   viewers_group:
     description: Group with run/view permission
     default: ml-viewers
